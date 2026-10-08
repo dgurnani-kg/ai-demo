@@ -1,0 +1,21 @@
+# Java / Gradle
+build/
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+*.class
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Local only — never commit, and the permission deny-list blocks reading these
+.env
+.env.*
+*.pem

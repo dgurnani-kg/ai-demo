@@ -1,0 +1,25 @@
+{
+  "name": "library-client",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run gen:api && tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "gen:api": "openapi-typescript ../api/openapi.yaml -o src/api/schema.d.ts",
+    "check": "npm run gen:api && tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "openapi-typescript": "^7.4.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0"
+  }
+}

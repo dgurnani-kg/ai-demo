@@ -1,0 +1,936 @@
+<title>Prompt to Merge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --panel:      #E7EAE7;
+    --panel-2:    #F3F5F3;
+    --ink:        #11181B;
+    --ink-2:      #4A5552;
+    --ink-3:      #7C8783;
+    --line:       #C5CCC8;
+    --line-2:     #DDE2DF;
+    --amber:      #B4730A;
+    --amber-soft: #F0DCB4;
+    --green:      #1C7349;
+    --green-soft: #CBE3D5;
+    --red:        #AE3426;
+    --red-soft:   #F2D2CC;
+    --route:      #9AA5A1;
+
+    --sans: 'Archivo', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --panel:      #12181A;
+      --panel-2:    #1B2325;
+      --ink:        #EAF0ED;
+      --ink-2:      #A9B5B1;
+      --ink-3:      #76827E;
+      --line:       #2E393B;
+      --line-2:     #222C2E;
+      --amber:      #E8A733;
+      --amber-soft: #4A3718;
+      --green:      #4FBD86;
+      --green-soft: #1A3C2B;
+      --red:        #E8705D;
+      --red-soft:   #43201B;
+      --route:      #49565A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --panel:      #12181A;
+    --panel-2:    #1B2325;
+    --ink:        #EAF0ED;
+    --ink-2:      #A9B5B1;
+    --ink-3:      #76827E;
+    --line:       #2E393B;
+    --line-2:     #222C2E;
+    --amber:      #E8A733;
+    --amber-soft: #4A3718;
+    --green:      #4FBD86;
+    --green-soft: #1A3C2B;
+    --red:        #E8705D;
+    --red-soft:   #43201B;
+    --route:      #49565A;
+  }
+
+  html, body { height: 100%; }
+  body {
+    background: var(--panel);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-inline: 16px;
+    padding-block: 0;
+    max-width: 1440px;
+    margin-inline: auto;
+  }
+
+  /* ---------- header ---------- */
+  .topbar {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    padding-block: 18px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .mark {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mark::before {
+    content: "";
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--amber);
+    box-shadow: 0 0 0 3px var(--amber-soft);
+  }
+  .topbar h1 {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .topbar .sub {
+    font-size: 13px;
+    color: var(--ink-3);
+    margin-left: auto;
+  }
+
+  /* ---------- progress rail ---------- */
+  .rail {
+    display: flex;
+    gap: 3px;
+    padding-block: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .rail::-webkit-scrollbar { display: none; }
+  .pip {
+    flex: 1 1 0;
+    min-width: 26px;
+    border: 0;
+    padding: 0;
+    height: 28px;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--ink-3);
+    letter-spacing: 0.06em;
+  }
+  .pip i {
+    display: block;
+    height: 3px;
+    background: var(--line);
+    transition: background 220ms ease;
+  }
+  .pip.seen i { background: var(--route); }
+  .pip.now i  { background: var(--amber); }
+  .pip.now    { color: var(--amber); }
+  .pip span { text-align: left; font-style: normal; }
+  .pip:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  /* ---------- stage ---------- */
+  .stage-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    border-radius: 2px;
+  }
+  .stage {
+    display: block;
+    width: 100%;
+    min-width: 860px;
+    height: auto;
+  }
+
+  /* svg atoms */
+  .route-path {
+    fill: none;
+    stroke: var(--route);
+    stroke-width: 2;
+    opacity: 0.3;
+    transition: opacity 320ms ease, stroke 320ms ease;
+  }
+  .route-live {
+    fill: none;
+    stroke: var(--amber);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    opacity: 0;
+    transition: stroke-dashoffset 620ms cubic-bezier(.4,0,.2,1), opacity 220ms ease, stroke 260ms ease;
+  }
+  .edge.lit .route-live { opacity: 1; stroke-dashoffset: 0 !important; }
+  .edge.settled .route-live { opacity: 1; stroke: var(--green); stroke-dashoffset: 0 !important; }
+  .edge.rejected .route-live { opacity: 1; stroke: var(--red); stroke-dashoffset: 0 !important; }
+  .edge.dashed .route-live { stroke-dasharray: 7 6 !important; stroke-dashoffset: 0 !important; }
+
+  .node rect {
+    fill: var(--panel);
+    stroke: var(--line);
+    stroke-width: 1.5;
+    transition: fill 280ms ease, stroke 280ms ease, stroke-width 280ms ease;
+  }
+  .node .n-title {
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 600;
+    fill: var(--ink);
+    transition: fill 280ms ease;
+  }
+  .node .n-eyebrow {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    fill: var(--ink-3);
+    transition: fill 280ms ease;
+  }
+  .node .n-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    fill: var(--ink-3);
+    transition: fill 280ms ease;
+  }
+  .node { opacity: 0.4; transition: opacity 300ms ease; }
+  .node.live, .node.settled, .node.failed { opacity: 1; }
+
+  .node.live rect     { stroke: var(--amber); stroke-width: 2.5; fill: var(--amber-soft); }
+  .node.live .n-eyebrow { fill: var(--amber); }
+  .node.settled rect  { stroke: var(--green); stroke-width: 2; fill: var(--green-soft); }
+  .node.settled .n-eyebrow { fill: var(--green); }
+  .node.failed rect   { stroke: var(--red); stroke-width: 2.5; fill: var(--red-soft); }
+  .node.failed .n-eyebrow { fill: var(--red); }
+  .node.settled .n-meta, .node.live .n-meta, .node.failed .n-meta { fill: var(--ink-2); }
+
+  .lamp { r: 4.5; fill: var(--line); transition: fill 280ms ease; }
+  .node.live .lamp    { fill: var(--amber); }
+  .node.settled .lamp { fill: var(--green); }
+  .node.failed .lamp  { fill: var(--red); }
+
+  .edge-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    fill: var(--ink-3);
+    opacity: 0;
+    transition: opacity 280ms ease;
+  }
+  .edge.lit .edge-label, .edge.settled .edge-label, .edge.rejected .edge-label { opacity: 1; fill: var(--ink-2); }
+
+  .fence { stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 5; fill: none; opacity: 0; transition: opacity 300ms ease; }
+  .fence-on .fence { opacity: 1; stroke: var(--amber); }
+  .fence-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; fill: var(--amber); opacity: 0; transition: opacity 300ms ease; }
+  .fence-on .fence-label { opacity: 1; }
+
+  /* ---------- narration ---------- */
+  .readout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+    gap: 28px;
+    padding-block: 22px 18px;
+    align-items: start;
+  }
+  .narration .eyebrow {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin: 0 0 8px;
+  }
+  .narration h2 {
+    font-size: clamp(22px, 2.5vw, 30px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0 0 10px;
+  }
+  .narration p {
+    margin: 0;
+    max-width: 62ch;
+    font-size: 15.5px;
+    color: var(--ink-2);
+  }
+  .narration code {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    background: var(--panel-2);
+    border: 1px solid var(--line-2);
+    padding: 1px 5px;
+    color: var(--ink);
+  }
+  .metric {
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--ink-2);
+    border-left: 3px solid var(--amber);
+    padding: 4px 0 4px 12px;
+  }
+  .metric.bad { border-left-color: var(--red); color: var(--red); }
+
+  /* context inspector */
+  .inspector {
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    padding: 14px 16px 16px;
+  }
+  .inspector h3 {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 3px;
+  }
+  .inspector .who {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 12px;
+  }
+  .ctx-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+  .ctx-list li {
+    display: grid;
+    grid-template-columns: 10px 1fr auto;
+    gap: 9px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-2);
+  }
+  .ctx-list li b { font-weight: 500; color: var(--ink); overflow-wrap: anywhere; }
+  .ctx-list li em { font-style: normal; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+  .dot.in   { background: var(--green); }
+  .dot.new  { background: var(--amber); }
+  .dot.out  { background: transparent; border: 1px solid var(--route); }
+  .dot.bad  { background: var(--red); }
+  .ctx-foot {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line-2);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    line-height: 1.5;
+  }
+
+  /* ---------- controls ---------- */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-block: 12px 22px;
+    border-top: 1px solid var(--line);
+    margin-top: auto;
+  }
+  .btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 9px 16px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color 160ms ease, color 160ms ease;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--amber); color: var(--amber); }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+  .btn.primary { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .btn.primary:hover { background: var(--amber); border-color: var(--amber); color: #fff; }
+  .btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .keys {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    letter-spacing: 0.04em;
+  }
+  .keys kbd {
+    font-family: var(--mono);
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    padding: 1px 5px;
+    font-size: 10px;
+    color: var(--ink-2);
+  }
+
+  @media (max-width: 820px) {
+    .readout { grid-template-columns: 1fr; gap: 20px; }
+    .topbar .sub { margin-left: 0; width: 100%; }
+    .keys { margin-left: 0; width: 100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 1ms !important; animation-duration: 1ms !important; }
+  }
+</style>
+
+<div class="shell">
+
+  <header class="topbar">
+    <span class="mark">Interlocking</span>
+    <h1>Prompt to Merge</h1>
+    <span class="sub">How one feature request moves through an AI-ready Spring repo</span>
+  </header>
+
+  <nav class="rail" id="rail" aria-label="Steps"></nav>
+
+  <div class="stage-wrap">
+    <svg class="stage" id="stage" viewBox="0 0 1260 680" role="img" aria-labelledby="stage-title">
+      <title id="stage-title">Route diagram from prompt through contract, parallel agents and the verification gate to a pull request</title>
+
+      <defs>
+        <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 9 5 L 0 9 z" fill="currentColor"></path>
+        </marker>
+      </defs>
+
+      <!-- isolation fence around the agent column -->
+      <g id="fence-group">
+        <rect class="fence" x="668" y="72" width="246" height="130" rx="2"></rect>
+        <rect class="fence" x="668" y="272" width="246" height="130" rx="2"></rect>
+        <rect class="fence" x="668" y="472" width="246" height="130" rx="2"></rect>
+        <text class="fence-label" x="791" y="628" text-anchor="middle">SEPARATE CONTEXT WINDOWS</text>
+      </g>
+
+      <!-- ===== edges ===== -->
+      <g id="edges" color="var(--amber)">
+        <g class="edge" data-edge="e1">
+          <path class="route-path" d="M175 340 H200"></path>
+          <path class="route-live" d="M175 340 H200" marker-end="url(#arw)"></path>
+        </g>
+
+        <g class="edge dashed" data-edge="e2">
+          <path class="route-path" d="M300 148 V302"></path>
+          <path class="route-live" d="M300 148 V302" marker-end="url(#arw)"></path>
+          <text class="edge-label" x="312" y="232">always loaded</text>
+        </g>
+
+        <g class="edge" data-edge="e3">
+          <path class="route-path" d="M300 537 V378"></path>
+          <path class="route-live" d="M300 537 V378" marker-end="url(#arw)"></path>
+          <text class="edge-label" x="312" y="462">on demand</text>
+        </g>
+
+        <g class="edge" data-edge="e4">
+          <path class="route-path" d="M400 340 H455"></path>
+          <path class="route-live" d="M400 340 H455" marker-end="url(#arw)"></path>
+        </g>
+
+        <g class="edge" data-edge="e5">
+          <path class="route-path" d="M625 340 C672 340 658 140 685 140"></path>
+          <path class="route-live" d="M625 340 C672 340 658 140 685 140" marker-end="url(#arw)"></path>
+        </g>
+        <g class="edge" data-edge="e6">
+          <path class="route-path" d="M625 340 H685"></path>
+          <path class="route-live" d="M625 340 H685" marker-end="url(#arw)"></path>
+          <text class="edge-label" x="655" y="330" text-anchor="middle">read-only</text>
+        </g>
+        <g class="edge" data-edge="e7">
+          <path class="route-path" d="M625 340 C672 340 658 540 685 540"></path>
+          <path class="route-live" d="M625 340 C672 340 658 540 685 540" marker-end="url(#arw)"></path>
+        </g>
+
+        <g class="edge dashed" data-edge="r1">
+          <path class="route-path" d="M685 375 C620 440 470 440 400 375"></path>
+          <path class="route-live" d="M685 375 C620 440 470 440 400 375" marker-end="url(#arw)"></path>
+          <text class="edge-label" x="542" y="452" text-anchor="middle">summaries only</text>
+        </g>
+
+        <g class="edge" data-edge="e8">
+          <path class="route-path" d="M897 140 C932 140 908 300 925 310"></path>
+          <path class="route-live" d="M897 140 C932 140 908 300 925 310" marker-end="url(#arw)"></path>
+        </g>
+        <g class="edge" data-edge="e9">
+          <path class="route-path" d="M897 340 H925"></path>
+          <path class="route-live" d="M897 340 H925" marker-end="url(#arw)"></path>
+        </g>
+        <g class="edge" data-edge="e10">
+          <path class="route-path" d="M897 540 C932 540 908 380 925 370"></path>
+          <path class="route-live" d="M897 540 C932 540 908 380 925 370" marker-end="url(#arw)"></path>
+        </g>
+
+        <g class="edge" data-edge="e11">
+          <path class="route-path" d="M1075 340 H1140"></path>
+          <path class="route-live" d="M1075 340 H1140" marker-end="url(#arw)"></path>
+        </g>
+
+        <g class="edge" data-edge="e12">
+          <path class="route-path" d="M1000 395 C1000 660 540 662 540 380"></path>
+          <path class="route-live" d="M1000 395 C1000 660 540 662 540 380" marker-end="url(#arw)"></path>
+          <text class="edge-label" x="770" y="672" text-anchor="middle">exit 1 — back around</text>
+        </g>
+      </g>
+
+      <!-- ===== nodes ===== -->
+      <g id="nodes">
+        <g class="node" data-node="prompt">
+          <rect x="25" y="306" width="150" height="68" rx="2"></rect>
+          <circle class="lamp" cx="42" cy="323"></circle>
+          <text class="n-eyebrow" x="56" y="327">ASK</text>
+          <text class="n-title" x="42" y="352" font-size="14">Reserve a book</text>
+          <text class="n-meta" x="42" y="366">on loan</text>
+        </g>
+
+        <g class="node" data-node="claudemd">
+          <rect x="200" y="92" width="200" height="56" rx="2"></rect>
+          <circle class="lamp" cx="217" cy="110"></circle>
+          <text class="n-eyebrow" x="231" y="114">STANDING ORDERS</text>
+          <text class="n-title" x="217" y="137" font-size="15">CLAUDE.md</text>
+        </g>
+
+        <g class="node" data-node="orch">
+          <rect x="200" y="302" width="200" height="76" rx="2"></rect>
+          <circle class="lamp" cx="217" cy="324"></circle>
+          <text class="n-eyebrow" x="231" y="328">MAIN SESSION</text>
+          <text class="n-title" x="217" y="352">Orchestrator</text>
+          <text class="n-meta" x="217" y="368">holds the thread</text>
+        </g>
+
+        <g class="node" data-node="skill">
+          <rect x="200" y="537" width="200" height="60" rx="2"></rect>
+          <circle class="lamp" cx="217" cy="558"></circle>
+          <text class="n-eyebrow" x="231" y="562">SKILL</text>
+          <text class="n-title" x="217" y="585" font-size="14">api-contract-change</text>
+        </g>
+
+        <g class="node" data-node="contract">
+          <rect x="455" y="296" width="170" height="88" rx="2"></rect>
+          <circle class="lamp" cx="472" cy="318"></circle>
+          <text class="n-eyebrow" x="486" y="322">CONTRACT</text>
+          <text class="n-title" x="472" y="346" font-size="14">api/openapi.yaml</text>
+          <text class="n-meta" x="472" y="368">frozen · read-only</text>
+        </g>
+
+        <g class="node" data-node="agentB">
+          <rect x="687" y="104" width="210" height="72" rx="2"></rect>
+          <circle class="lamp" cx="704" cy="126"></circle>
+          <text class="n-eyebrow" x="718" y="130">AGENT</text>
+          <text class="n-title" x="704" y="152" font-size="15">backend-impl</text>
+          <text class="n-meta" x="704" y="168">src/main/java</text>
+        </g>
+
+        <g class="node" data-node="agentF">
+          <rect x="687" y="304" width="210" height="72" rx="2"></rect>
+          <circle class="lamp" cx="704" cy="326"></circle>
+          <text class="n-eyebrow" x="718" y="330">AGENT</text>
+          <text class="n-title" x="704" y="352" font-size="15">frontend-impl</text>
+          <text class="n-meta" x="704" y="368">src/app</text>
+        </g>
+
+        <g class="node" data-node="agentT">
+          <rect x="687" y="504" width="210" height="72" rx="2"></rect>
+          <circle class="lamp" cx="704" cy="526"></circle>
+          <text class="n-eyebrow" x="718" y="530">AGENT</text>
+          <text class="n-title" x="704" y="552" font-size="15">test-author</text>
+          <text class="n-meta" x="704" y="568">src/test/java</text>
+        </g>
+
+        <g class="node" data-node="gate">
+          <rect x="925" y="282" width="150" height="116" rx="2"></rect>
+          <circle class="lamp" cx="942" cy="304"></circle>
+          <text class="n-eyebrow" x="956" y="308">GATE</text>
+          <text class="n-meta" x="942" y="334">spotless</text>
+          <text class="n-meta" x="942" y="352">compile</text>
+          <text class="n-meta" x="942" y="370">ArchUnit</text>
+          <text class="n-meta" x="942" y="388">contract test</text>
+        </g>
+
+        <g class="node" data-node="merge">
+          <rect x="1140" y="306" width="110" height="68" rx="2"></rect>
+          <circle class="lamp" cx="1157" cy="326"></circle>
+          <text class="n-eyebrow" x="1171" y="330">PR</text>
+          <text class="n-title" x="1157" y="354" font-size="14">Diff</text>
+          <text class="n-meta" x="1157" y="368">human reads</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <section class="readout">
+    <div class="narration">
+      <p class="eyebrow" id="step-eyebrow">Step</p>
+      <h2 id="step-title">—</h2>
+      <p id="step-body">—</p>
+      <p class="metric" id="step-metric" hidden></p>
+    </div>
+
+    <aside class="inspector" aria-live="polite">
+      <h3>Context window</h3>
+      <p class="who" id="ctx-who">—</p>
+      <ul class="ctx-list" id="ctx-list"></ul>
+      <p class="ctx-foot" id="ctx-foot"></p>
+    </aside>
+  </section>
+
+  <div class="controls">
+    <button class="btn" id="prev" type="button">← Back</button>
+    <button class="btn primary" id="next" type="button">Next →</button>
+    <button class="btn" id="play" type="button">Auto-play</button>
+    <span class="keys">
+      <kbd>←</kbd> <kbd>→</kbd> step · <kbd>P</kbd> auto-play · <kbd>R</kbd> restart
+    </span>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STEPS = [
+    {
+      pip: "ASK",
+      eyebrow: "Step 1 — the ask",
+      title: "One sentence enters the system",
+      body: "A feature request in plain English: members can reserve a book that is currently on loan. Everything downstream exists to constrain what happens to it. The sentence is the only ambiguous thing in this whole diagram — by the next step it will have been turned into something checkable.",
+      nodes: { prompt: "live", orch: "live" },
+      edges: { e1: "lit" },
+      ctx: {
+        who: "main session",
+        items: [
+          { s: "in",  k: "CLAUDE.md", v: "~1.2k" },
+          { s: "new", k: "the prompt", v: "~40" },
+          { s: "out", k: "skills", v: "not yet" },
+          { s: "out", k: "repo source", v: "not yet" }
+        ],
+        foot: "Token figures throughout are illustrative, not measured."
+      }
+    },
+    {
+      pip: "ORDERS",
+      eyebrow: "Step 2 — standing orders",
+      title: "CLAUDE.md is always in the room",
+      body: "Repo conventions load on every single turn: package layout, which layer may call which, how migrations are named, what the build command is. Because it is always loaded, it is always paid for. A 600-line CLAUDE.md is a tax on every request you will ever make — keep it to the rules that would otherwise be guessed wrong.",
+      nodes: { claudemd: "live", orch: "live", prompt: "settled" },
+      edges: { e1: "settled", e2: "lit" },
+      ctx: {
+        who: "main session",
+        items: [
+          { s: "in",  k: "CLAUDE.md", v: "~1.2k" },
+          { s: "in",  k: "the prompt", v: "~40" },
+          { s: "new", k: "layer rules", v: "in CLAUDE.md" },
+          { s: "out", k: "repo source", v: "not yet" }
+        ],
+        foot: "Standing orders are persuasion. They shape behaviour; they do not enforce it."
+      }
+    },
+    {
+      pip: "SKILL",
+      eyebrow: "Step 3 — knowledge on demand",
+      title: "A skill loads only when it is relevant",
+      body: "<code>api-contract-change</code> is the written procedure for editing the OpenAPI spec — how to version it, what a breaking change means here, which test must be updated alongside. It was not in context a moment ago. It is pulled in because the task matched it, and it costs nothing until then. That is the difference between a skill and CLAUDE.md.",
+      nodes: { skill: "live", orch: "live", claudemd: "settled", prompt: "settled" },
+      edges: { e1: "settled", e2: "settled", e3: "lit" },
+      ctx: {
+        who: "main session",
+        items: [
+          { s: "in",  k: "CLAUDE.md", v: "~1.2k" },
+          { s: "in",  k: "the prompt", v: "~40" },
+          { s: "new", k: "skill: api-contract-change", v: "~800" },
+          { s: "out", k: "other 11 skills", v: "unloaded" }
+        ],
+        foot: "Eleven other skills exist in this repo. None of them are in context, and none of them cost anything right now."
+      }
+    },
+    {
+      pip: "FREEZE",
+      eyebrow: "Step 4 — the contract",
+      title: "The spec is written before any code is",
+      body: "One deliberate edit to <code>api/openapi.yaml</code>: a <code>POST /books/{id}/reservations</code> and a <code>Reservation</code> schema. From this moment the file is read-only for everything downstream. This is the single most useful guardrail on the diagram, because it converts a vague feature description into something three independent workers can be checked against.",
+      nodes: { contract: "live", orch: "settled", skill: "settled", claudemd: "settled", prompt: "settled" },
+      edges: { e1: "settled", e2: "settled", e3: "settled", e4: "lit" },
+      ctx: {
+        who: "main session",
+        items: [
+          { s: "in",  k: "CLAUDE.md", v: "~1.2k" },
+          { s: "in",  k: "skill: api-contract-change", v: "~800" },
+          { s: "new", k: "openapi.yaml (updated)", v: "~1.5k" },
+          { s: "out", k: "src/main/java", v: "untouched" }
+        ],
+        foot: "No implementation code has been written or read yet."
+      }
+    },
+    {
+      pip: "FAN-OUT",
+      eyebrow: "Step 5 — fan-out",
+      title: "Three agents, three context windows",
+      body: "The workflow spawns backend, frontend and test agents in parallel, each with its own tool restrictions. This is the expensive step: three context windows filling at once, three sets of tool calls, cost arriving in a burst the user did not individually approve. It is worth it here because the three jobs genuinely do not depend on each other. For a three-file change it would be pure waste.",
+      nodes: { contract: "settled", agentB: "live", agentF: "live", agentT: "live", orch: "settled", skill: "settled", claudemd: "settled", prompt: "settled" },
+      edges: { e1: "settled", e2: "settled", e3: "settled", e4: "settled", e5: "lit", e6: "lit", e7: "lit" },
+      metric: "3 context windows · wall-clock ≈ the slowest agent, not the sum",
+      ctx: {
+        who: "backend-impl",
+        items: [
+          { s: "new", k: "CLAUDE.md", v: "~1.2k" },
+          { s: "new", k: "openapi.yaml", v: "~1.5k" },
+          { s: "new", k: "its own brief", v: "~300" },
+          { s: "out", k: "frontend-impl's work", v: "invisible" }
+        ],
+        foot: "Each agent starts from a fresh window. What you did not put in the brief, it does not know."
+      }
+    },
+    {
+      pip: "ISOLATE",
+      eyebrow: "Step 6 — isolation",
+      title: "None of them can see each other",
+      body: "backend-impl cannot read frontend-impl's context. Neither can edit the contract — the agent definitions restrict their writable paths. The spec is the only thing all three share. This is not a limitation to engineer around; it is the entire reason running them at once is safe. Shared mutable state between parallel agents is how you get three plausible, mutually incompatible implementations.",
+      nodes: { contract: "settled", agentB: "live", agentF: "live", agentT: "live", orch: "settled", skill: "settled", claudemd: "settled", prompt: "settled" },
+      edges: { e1: "settled", e2: "settled", e3: "settled", e4: "settled", e5: "settled", e6: "settled", e7: "settled" },
+      fence: true,
+      ctx: {
+        who: "three windows, side by side",
+        items: [
+          { s: "in",  k: "backend-impl → openapi.yaml", v: "read" },
+          { s: "in",  k: "frontend-impl → openapi.yaml", v: "read" },
+          { s: "in",  k: "test-author → openapi.yaml", v: "read" },
+          { s: "bad", k: "anyone → openapi.yaml", v: "write denied" }
+        ],
+        foot: "One shared artefact, read-only to all three. Everything else is private."
+      }
+    },
+    {
+      pip: "RETURN",
+      eyebrow: "Step 7 — the return trip",
+      title: "Summaries come back, not transcripts",
+      body: "Each agent reports a short result. The forty-odd tool calls it made, the files it read and discarded, the wrong turn it took and recovered from — all of that stays in its own window and never reaches yours. Your main session stays small and cheap. The flip side is real: you see only what the agent chose to tell you, in the same confident tone whether it went well or not.",
+      nodes: { agentB: "settled", agentF: "settled", agentT: "settled", orch: "live", contract: "settled", skill: "settled", claudemd: "settled", prompt: "settled" },
+      edges: { e1: "settled", e2: "settled", e3: "settled", e4: "settled", e5: "settled", e6: "settled", e7: "settled", r1: "lit" },
+      metric: "~180k tokens spent in the agent windows · ~2k returned to yours",
+      ctx: {
+        who: "main session",
+        items: [
+          { s: "in",  k: "CLAUDE.md", v: "~1.2k" },
+          { s: "in",  k: "openapi.yaml", v: "~1.5k" },
+          { s: "new", k: "3 agent reports", v: "~2k" },
+          { s: "out", k: "their tool calls", v: "discarded" }
+        ],
+        foot: "This is the saving. It is also the blind spot — the gate exists because you did not watch the work."
+      }
+    },
+    {
+      pip: "GATE",
+      eyebrow: "Step 8 — the gate",
+      title: "The only layer that actually enforces anything",
+      body: "Hooks and checks run regardless of what any model decided: Spotless, the compiler, ArchUnit rules on layer access, and a contract test that diffs the running API against the spec. No prompt can talk its way past a non-zero exit code. Everything to the left of this box is persuasion. This box is law — and it is the part your team already knows how to write.",
+      nodes: { gate: "live", agentB: "settled", agentF: "settled", agentT: "settled", orch: "settled", contract: "settled", skill: "settled", claudemd: "settled", prompt: "settled" },
+      edges: { e1: "settled", e2: "settled", e3: "settled", e4: "settled", e5: "settled", e6: "settled", e7: "settled", r1: "settled", e8: "lit", e9: "lit", e10: "lit" },
+      ctx: {
+        who: "the gate — no context window",
+        items: [
+          { s: "in", k: "spotlessCheck", v: "deterministic" },
+          { s: "in", k: "compileJava", v: "deterministic" },
+          { s: "in", k: "ArchitectureTest", v: "deterministic" },
+          { s: "in", k: "contractMatchesSpec", v: "deterministic" }
+        ],
+        foot: "A gate that an agent can edit is not a gate. These live behind review like any other test."
+      }
+    },
+    {
+      pip: "CATCH",
+      eyebrow: "Step 9 — the catch",
+      title: "frontend-impl invented a field",
+      body: "It added <code>reservedUntil</code> to the UI model and rendered it in the table. Plausible, useful, and not in the spec — so the backend never returns it and the column would have shipped permanently empty. The contract test fails. Nobody noticed this; a rule did. That distinction is the whole argument for the gate, because a reviewer skimming a 400-line diff would have let it through.",
+      nodes: { gate: "failed", agentF: "failed", agentB: "settled", agentT: "settled", orch: "settled", contract: "settled", skill: "settled", claudemd: "settled", prompt: "settled" },
+      edges: { e1: "settled", e2: "settled", e3: "settled", e4: "settled", e5: "settled", e6: "settled", e7: "settled", r1: "settled", e8: "settled", e9: "rejected", e10: "settled", e12: "rejected" },
+      metric: "ContractTest > responseMatchesSpec FAILED — unexpected property 'reservedUntil' · exit 1",
+      metricBad: true,
+      ctx: {
+        who: "frontend-impl — second pass",
+        items: [
+          { s: "new", k: "the failure output", v: "fed back" },
+          { s: "in",  k: "openapi.yaml", v: "still read-only" },
+          { s: "bad", k: "reservedUntil", v: "rejected" },
+          { s: "out", k: "spec change", v: "not its call" }
+        ],
+        foot: "If the field is genuinely wanted, it goes back through the contract skill — not around it."
+      }
+    },
+    {
+      pip: "MERGE",
+      eyebrow: "Step 10 — the loop closes",
+      title: "Green, then a person reads it",
+      body: "Fix, re-run, green across all four checks. Then a human reads the diff like any other pull request. The guardrails never removed the review — they made it short enough that you will actually do it, and they moved the boring half of it (formatting, layer violations, contract drift) to a machine that does not get tired at 5pm.",
+      nodes: { merge: "live", gate: "settled", agentB: "settled", agentF: "settled", agentT: "settled", orch: "settled", contract: "settled", skill: "settled", claudemd: "settled", prompt: "settled" },
+      edges: { e1: "settled", e2: "settled", e3: "settled", e4: "settled", e5: "settled", e6: "settled", e7: "settled", r1: "settled", e8: "settled", e9: "settled", e10: "settled", e11: "settled" },
+      metric: "4 checks green · 9 files changed · 1 human approval still required",
+      ctx: {
+        who: "you",
+        items: [
+          { s: "in",  k: "the diff", v: "9 files" },
+          { s: "in",  k: "4 passing checks", v: "green" },
+          { s: "new", k: "your judgement", v: "required" },
+          { s: "out", k: "auto-merge", v: "no" }
+        ],
+        foot: "Nothing in this diagram ships code without a person saying yes."
+      }
+    }
+  ];
+
+  var stage    = document.getElementById("stage");
+  var railEl   = document.getElementById("rail");
+  var fenceG   = document.getElementById("fence-group");
+  var elTitle  = document.getElementById("step-title");
+  var elBody   = document.getElementById("step-body");
+  var elEyebrow= document.getElementById("step-eyebrow");
+  var elMetric = document.getElementById("step-metric");
+  var elWho    = document.getElementById("ctx-who");
+  var elList   = document.getElementById("ctx-list");
+  var elFoot   = document.getElementById("ctx-foot");
+  var btnPrev  = document.getElementById("prev");
+  var btnNext  = document.getElementById("next");
+  var btnPlay  = document.getElementById("play");
+
+  var nodeEls = {};
+  Array.prototype.forEach.call(stage.querySelectorAll("[data-node]"), function (g) {
+    nodeEls[g.getAttribute("data-node")] = g;
+  });
+
+  var edgeEls = {};
+  Array.prototype.forEach.call(stage.querySelectorAll("[data-edge]"), function (g) {
+    var id = g.getAttribute("data-edge");
+    edgeEls[id] = g;
+    var live = g.querySelector(".route-live");
+    var len = 0;
+    try { len = live.getTotalLength(); } catch (e) { len = 600; }
+    if (!g.classList.contains("dashed")) {
+      live.style.strokeDasharray = len;
+      live.style.strokeDashoffset = len;
+    }
+  });
+
+  var index = 0;
+  var timer = null;
+
+  STEPS.forEach(function (s, i) {
+    var b = document.createElement("button");
+    b.className = "pip";
+    b.type = "button";
+    b.innerHTML = '<i></i><span>' + s.pip + '</span>';
+    b.addEventListener("click", function () { stop(); go(i); });
+    railEl.appendChild(b);
+  });
+  var pips = railEl.querySelectorAll(".pip");
+
+  function render() {
+    var s = STEPS[index];
+
+    Object.keys(nodeEls).forEach(function (k) {
+      var state = (s.nodes && s.nodes[k]) || "";
+      nodeEls[k].setAttribute("class", "node" + (state ? " " + state : ""));
+    });
+
+    Object.keys(edgeEls).forEach(function (k) {
+      var g = edgeEls[k];
+      var dashed = g.classList.contains("dashed");
+      var state = (s.edges && s.edges[k]) || "";
+      g.setAttribute("class", "edge" + (dashed ? " dashed" : "") + (state ? " " + state : ""));
+    });
+
+    fenceG.setAttribute("class", s.fence ? "fence-on" : "");
+
+    elEyebrow.textContent = s.eyebrow;
+    elTitle.textContent = s.title;
+    elBody.innerHTML = s.body;
+
+    if (s.metric) {
+      elMetric.textContent = s.metric;
+      elMetric.className = "metric" + (s.metricBad ? " bad" : "");
+      elMetric.hidden = false;
+    } else {
+      elMetric.hidden = true;
+    }
+
+    elWho.textContent = s.ctx.who;
+    elList.innerHTML = "";
+    s.ctx.items.forEach(function (it) {
+      var li = document.createElement("li");
+      li.innerHTML = '<span class="dot ' + it.s + '"></span><b></b><em></em>';
+      li.querySelector("b").textContent = it.k;
+      li.querySelector("em").textContent = it.v;
+      elList.appendChild(li);
+    });
+    elFoot.textContent = s.ctx.foot;
+
+    Array.prototype.forEach.call(pips, function (p, i) {
+      p.className = "pip" + (i < index ? " seen" : "") + (i === index ? " now" : "");
+      p.setAttribute("aria-current", i === index ? "step" : "false");
+    });
+
+    btnPrev.disabled = index === 0;
+    btnNext.disabled = index === STEPS.length - 1;
+  }
+
+  function go(i) {
+    index = Math.max(0, Math.min(STEPS.length - 1, i));
+    render();
+  }
+
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+    btnPlay.textContent = "Auto-play";
+  }
+
+  function play() {
+    if (timer) { stop(); return; }
+    btnPlay.textContent = "Pause";
+    if (index === STEPS.length - 1) go(0);
+    timer = setInterval(function () {
+      if (index >= STEPS.length - 1) { stop(); return; }
+      go(index + 1);
+    }, 7000);
+  }
+
+  btnPrev.addEventListener("click", function () { stop(); go(index - 1); });
+  btnNext.addEventListener("click", function () { stop(); go(index + 1); });
+  btnPlay.addEventListener("click", play);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+    if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { stop(); go(index + 1); e.preventDefault(); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") { stop(); go(index - 1); e.preventDefault(); }
+    else if (e.key === "p" || e.key === "P") { play(); }
+    else if (e.key === "r" || e.key === "R" || e.key === "Home") { stop(); go(0); }
+  });
+
+  render();
+})();
+</script>
