@@ -1,12 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, ApiFailure, type Book, type Loan, type Member } from "../api/client";
+import {
+  api,
+  ApiFailure,
+  type Book,
+  type Loan,
+  type Member,
+  type Reservation,
+} from "../api/client";
 import BookTable from "../components/BookTable";
 import LoanList from "../components/LoanList";
+import ReservationList from "../components/ReservationList";
 
 export default function CataloguePage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
   const [activeMemberId, setActiveMemberId] = useState<number | null>(null);
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [busyBookId, setBusyBookId] = useState<number | null>(null);
@@ -15,12 +24,14 @@ export default function CataloguePage() {
 
   const refresh = useCallback(async () => {
     try {
-      const [nextBooks, nextLoans] = await Promise.all([
+      const [nextBooks, nextLoans, nextReservations] = await Promise.all([
         api.listBooks(onlyAvailable),
         api.listLoans(),
+        api.listReservations(),
       ]);
       setBooks(nextBooks);
       setLoans(nextLoans);
+      setReservations(nextReservations);
       setError(null);
     } catch (cause) {
       setError(cause instanceof ApiFailure ? cause.message : "Could not reach the server.");
@@ -63,12 +74,36 @@ export default function CataloguePage() {
     }
   }
 
+  async function reserve(bookId: number) {
+    if (activeMemberId === null) return;
+    setBusyBookId(bookId);
+    try {
+      await api.reserve(bookId, activeMemberId);
+      await refresh();
+    } catch (cause) {
+      setError(cause instanceof ApiFailure ? cause.message : "Could not reserve that book.");
+    } finally {
+      setBusyBookId(null);
+    }
+  }
+
   async function returnLoan(loanId: number) {
     try {
       await api.returnLoan(loanId);
       await refresh();
     } catch (cause) {
       setError(cause instanceof ApiFailure ? cause.message : "Could not return that loan.");
+    }
+  }
+
+  async function cancelReservation(reservationId: number) {
+    try {
+      await api.cancelReservation(reservationId);
+      await refresh();
+    } catch (cause) {
+      setError(
+        cause instanceof ApiFailure ? cause.message : "Could not cancel that reservation.",
+      );
     }
   }
 
@@ -111,7 +146,15 @@ export default function CataloguePage() {
             </label>
           </div>
         </div>
-        <BookTable books={books} busyBookId={busyBookId} onBorrow={borrow} />
+        <BookTable
+          books={books}
+          reservations={reservations.filter(
+            (reservation) => reservation.memberId === activeMemberId,
+          )}
+          busyBookId={busyBookId}
+          onBorrow={borrow}
+          onReserve={reserve}
+        />
       </section>
 
       <section>
@@ -119,6 +162,13 @@ export default function CataloguePage() {
           <h2>Out on loan</h2>
         </div>
         <LoanList loans={loans} onReturn={returnLoan} />
+      </section>
+
+      <section>
+        <div className="section-head">
+          <h2>Reserved</h2>
+        </div>
+        <ReservationList reservations={reservations} onCancel={cancelReservation} />
       </section>
     </>
   );

@@ -20,12 +20,19 @@ public class LoanService {
     private final LoanRepository loans;
     private final BookService books;
     private final MemberService members;
+    private final ReservationService reservations;
     private final Clock clock;
 
-    public LoanService(LoanRepository loans, BookService books, MemberService members, Clock clock) {
+    public LoanService(
+            LoanRepository loans,
+            BookService books,
+            MemberService members,
+            ReservationService reservations,
+            Clock clock) {
         this.loans = loans;
         this.books = books;
         this.members = members;
+        this.reservations = reservations;
         this.clock = clock;
     }
 
@@ -41,8 +48,15 @@ public class LoanService {
         BookView book = books.get(bookId);
         members.get(memberId);
 
-        if (book.availableCopies() <= 0) {
-            throw new ConflictException("No copies of \"" + book.title() + "\" are on the shelf");
+        // A copy that is being held for someone who reserved it is on the shelf but not free.
+        boolean hasHold = reservations.holdsReadyCopy(bookId, memberId);
+        int freeCopies = book.availableCopies() - reservations.readyHolds(bookId);
+        if (!hasHold && freeCopies <= 0) {
+            if (book.availableCopies() <= 0) {
+                throw new ConflictException("No copies of \"" + book.title() + "\" are on the shelf");
+            }
+            throw new ConflictException(
+                    "Every copy of \"" + book.title() + "\" on the shelf is being held for a member who reserved it");
         }
         boolean alreadyHasIt = loans.findByMemberIdOrderByBorrowedAtDesc(memberId).stream()
                 .anyMatch(loan -> loan.isOpen() && loan.getBookId().equals(bookId));
@@ -51,6 +65,9 @@ public class LoanService {
         }
 
         Loan saved = loans.save(new Loan(bookId, memberId, clock.instant()));
+        if (hasHold) {
+            reservations.collect(bookId, memberId);
+        }
         return toView(saved);
     }
 
@@ -61,7 +78,10 @@ public class LoanService {
             throw new ConflictException("That loan was already returned");
         }
         loan.returnOn(clock.instant());
-        return toView(loans.save(loan));
+        LoanView view = toView(loans.save(loan));
+        // The copy that just came back is held for whoever has waited longest.
+        reservations.promoteNextInQueue(loan.getBookId());
+        return view;
     }
 
     private LoanView toView(Loan loan) {

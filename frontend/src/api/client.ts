@@ -11,6 +11,8 @@ import type { components } from "./schema";
 export type Book = components["schemas"]["Book"];
 export type Member = components["schemas"]["Member"];
 export type Loan = components["schemas"]["Loan"];
+export type Reservation = components["schemas"]["Reservation"];
+export type ReservationStatus = components["schemas"]["ReservationStatus"];
 export type ApiError = components["schemas"]["ApiError"];
 
 export class ApiFailure extends Error {
@@ -60,4 +62,21 @@ export const api = {
 
   returnLoan: (loanId: number) =>
     request<Loan>(`/api/loans/${loanId}/return`, { method: "POST" }),
+
+  reserve: (bookId: number, memberId: number) =>
+    request<Reservation>(`/api/books/${bookId}/reservations`, {
+      method: "POST",
+      body: JSON.stringify({ memberId }),
+    }),
+
+  listReservations: (memberId?: number, status?: ReservationStatus) => {
+    const query = new URLSearchParams();
+    if (memberId) query.set("memberId", String(memberId));
+    if (status) query.set("status", status);
+    const suffix = query.toString();
+    return request<Reservation[]>(`/api/reservations${suffix ? `?${suffix}` : ""}`);
+  },
+
+  cancelReservation: (reservationId: number) =>
+    request<Reservation>(`/api/reservations/${reservationId}/cancel`, { method: "POST" }),
 };
