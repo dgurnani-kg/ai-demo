@@ -24,7 +24,7 @@ Java 21 and Node 20+ required. The Gradle wrapper is committed; no local Gradle 
 | `CLAUDE.md` | Standing orders. Loaded every turn, so kept short on purpose. |
 | `api/openapi.yaml` | The contract. Read-only everywhere except one skill. |
 | `.claude/agents/` | Four scoped workers, each with explicit writable paths. |
-| `.claude/skills/` | Three procedures, loaded on demand. |
+| `.claude/skills/` | Four procedures, loaded on demand. |
 | `.claude/hooks/` | What actually blocks things. Not editable from a session. |
 | `.claude/workflows/` | The fan-out script for a multi-layer feature. |
 | `src/test/.../architecture/` | ArchUnit rules — layering, cycles, injection style. |
