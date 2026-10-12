@@ -108,6 +108,7 @@ table.grid td {
 table.grid .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  padding-right: 8px;
 }
 
 table.grid .actions {

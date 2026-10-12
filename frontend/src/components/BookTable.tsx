@@ -60,7 +60,7 @@ export default function BookTable({
                 </span>
               </td>
               <td className="actions">
-                {standing === "READY" && <span className="pill ready">Ready for you</span>}
+                {standing === "READY" && <span className="pill ready">Ready for Borrow</span>}
                 {canBorrow ? (
                   <button type="button" disabled={busy} onClick={() => onBorrow(book.id)}>
                     {busy ? "Borrowing…" : "Borrow"}
