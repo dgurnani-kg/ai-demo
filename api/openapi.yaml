@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Library Service API
-  version: 1.2.0
+  version: 1.3.0
   description: |
     The contract between the Spring backend and the React client.
 
@@ -138,6 +138,77 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
 
+  /api/books/{bookId}/reservations:
+    post:
+      tags: [lending]
+      summary: Reserve a book whose copies are all on loan
+      operationId: reserveBook
+      parameters:
+        - $ref: "#/components/parameters/BookId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReserveRequest"
+      responses:
+        "201":
+          description: The reservation that was created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/reservations:
+    get:
+      tags: [lending]
+      summary: List reservations, newest first
+      operationId: listReservations
+      parameters:
+        - name: memberId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Reservations, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reservation"
+
+  /api/reservations/{reservationId}/cancel:
+    post:
+      tags: [lending]
+      summary: Cancel an active reservation
+      operationId: cancelReservation
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: The cancelled reservation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
 components:
   parameters:
     BookId:
@@ -236,6 +307,45 @@ components:
         bookId:
           type: integer
           format: int64
+        memberId:
+          type: integer
+          format: int64
+
+    Reservation:
+      type: object
+      additionalProperties: false
+      required: [id, bookId, bookTitle, memberId, memberName, reservedAt, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+        bookId:
+          type: integer
+          format: int64
+        bookTitle:
+          type: string
+        memberId:
+          type: integer
+          format: int64
+        memberName:
+          type: string
+        reservedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [ACTIVE, CANCELLED]
+        queuePosition:
+          description: 1-based place in the queue for this book. Null once cancelled.
+          type: integer
+          minimum: 1
+          nullable: true
+
+    ReserveRequest:
+      type: object
+      additionalProperties: false
+      required: [memberId]
+      properties:
         memberId:
           type: integer
           format: int64

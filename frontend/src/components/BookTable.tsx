@@ -4,9 +4,10 @@ type Props = {
   books: Book[];
   busyBookId: number | null;
   onBorrow: (bookId: number) => void;
+  onReserve: (bookId: number) => void;
 };
 
-export default function BookTable({ books, busyBookId, onBorrow }: Props) {
+export default function BookTable({ books, busyBookId, onBorrow, onReserve }: Props) {
   if (books.length === 0) {
     return <p className="empty">Nothing on the shelf right now.</p>;
   }
@@ -35,13 +36,23 @@ export default function BookTable({ books, busyBookId, onBorrow }: Props) {
               </span>
             </td>
             <td className="actions">
-              <button
-                type="button"
-                disabled={book.availableCopies === 0 || busyBookId === book.id}
-                onClick={() => onBorrow(book.id)}
-              >
-                {busyBookId === book.id ? "Borrowing…" : "Borrow"}
-              </button>
+              {book.availableCopies === 0 ? (
+                <button
+                  type="button"
+                  disabled={busyBookId === book.id}
+                  onClick={() => onReserve(book.id)}
+                >
+                  {busyBookId === book.id ? "Reserving…" : "Reserve"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busyBookId === book.id}
+                  onClick={() => onBorrow(book.id)}
+                >
+                  {busyBookId === book.id ? "Borrowing…" : "Borrow"}
+                </button>
+              )}
             </td>
           </tr>
         ))}

@@ -11,6 +11,7 @@ import type { components } from "./schema";
 export type Book = components["schemas"]["Book"];
 export type Member = components["schemas"]["Member"];
 export type Loan = components["schemas"]["Loan"];
+export type Reservation = components["schemas"]["Reservation"];
 export type ApiError = components["schemas"]["ApiError"];
 
 export class ApiFailure extends Error {
@@ -60,4 +61,16 @@ export const api = {
 
   returnLoan: (loanId: number) =>
     request<Loan>(`/api/loans/${loanId}/return`, { method: "POST" }),
+
+  listReservations: (memberId?: number) =>
+    request<Reservation[]>(`/api/reservations${memberId ? `?memberId=${memberId}` : ""}`),
+
+  reserve: (bookId: number, memberId: number) =>
+    request<Reservation>(`/api/books/${bookId}/reservations`, {
+      method: "POST",
+      body: JSON.stringify({ memberId }),
+    }),
+
+  cancelReservation: (reservationId: number) =>
+    request<Reservation>(`/api/reservations/${reservationId}/cancel`, { method: "POST" }),
 };
