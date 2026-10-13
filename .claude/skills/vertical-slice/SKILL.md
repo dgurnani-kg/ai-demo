@@ -15,20 +15,31 @@ updated and `./gradlew test --tests '*ApiContractTest'` passes against it.
 This step is sequential and it is done by one actor. A contract edited by two agents at
 once is not a contract.
 
-## 2. Decide whether to fan out
+## 2. Fan out
 
-Fan out to `backend-impl`, `frontend-impl` and `test-author` in parallel **only when all
-three are true**:
+If the change touches **all three** of `src/main/java/**`, `frontend/src/**` and
+`src/test/java/**`, fan out to `backend-impl`, `frontend-impl` and `test-author` in
+parallel. That is what this skill is for, and it is not a judgement call — check the paths
+and act on the answer.
+
+Do not weigh the size of the feature. A twelve-file slice and a forty-file slice both go
+through the same three lanes; estimating whether the overhead "pays" is guesswork that
+produces a different answer on different days, and an inconsistent orchestration is worse
+than a slightly wasteful one.
+
+Two things must be true before you spawn anything:
 
 - the contract is settled and unambiguous,
-- the three jobs touch disjoint paths,
-- the feature is big enough that the slowest agent takes longer than the overhead.
+- the three jobs touch genuinely disjoint paths.
 
-Otherwise do it inline. A three-file change does not need three context windows, and
-spawning them spends the user's tokens in a burst they did not ask for. When in doubt, do
-it yourself — the fan-out is an optimisation, not a ritual.
+If either fails, fix that first. Do not substitute inline work for a contract that is not
+settled — that is the one case where going inline hides a real problem.
 
-## 3. If you do fan out
+**If the change touches only one layer**, this is the wrong skill. Do it inline and do not
+spawn anything; a single-layer change does not need three context windows, and spawning
+them spends tokens in a burst the user did not ask for.
+
+## 3. What each agent gets
 
 Each agent gets: the feature brief, the relevant contract section, and nothing else. They
 cannot see each other. Resist the urge to tell `frontend-impl` what `backend-impl` is doing

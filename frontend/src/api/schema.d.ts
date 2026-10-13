@@ -90,6 +90,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/books/{bookId}/reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reserve a book whose copies are all on loan */
+        post: operations["reserveBook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List reservations, newest first */
+        get: operations["listReservations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reservations/{reservationId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel an active reservation */
+        post: operations["cancelReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -130,6 +181,26 @@ export interface components {
         BorrowRequest: {
             /** Format: int64 */
             bookId: number;
+            /** Format: int64 */
+            memberId: number;
+        };
+        Reservation: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            bookId: number;
+            bookTitle: string;
+            /** Format: int64 */
+            memberId: number;
+            memberName: string;
+            /** Format: date-time */
+            reservedAt: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "CANCELLED";
+            /** @description 1-based place in the queue for this book. Null once cancelled. */
+            queuePosition?: number | null;
+        };
+        ReserveRequest: {
             /** Format: int64 */
             memberId: number;
         };
@@ -299,6 +370,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Loan"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    reserveBook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookId: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReserveRequest"];
+            };
+        };
+        responses: {
+            /** @description The reservation that was created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reservation"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listReservations: {
+        parameters: {
+            query?: {
+                memberId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reservations, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reservation"][];
+                };
+            };
+        };
+    };
+    cancelReservation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reservationId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The cancelled reservation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reservation"];
                 };
             };
             404: components["responses"]["NotFound"];

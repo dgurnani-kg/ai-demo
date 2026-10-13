@@ -6,12 +6,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.atlassian.oai.validator.OpenApiInteractionValidator;
 import com.atlassian.oai.validator.mockmvc.OpenApiValidationMatchers;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 /**
  * Every response is checked against api/openapi.yaml.
@@ -28,6 +30,9 @@ class ApiContractTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
     void specItselfIsValid() {
@@ -82,6 +87,63 @@ class ApiContractTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"bookId\":1,\"memberId\":2}"))
                 .andExpect(status().isCreated())
+                .andExpect(OpenApiValidationMatchers.openApi().isValid(SPEC));
+    }
+
+    @Test
+    void reserveMatchesSpec() throws Exception {
+        // Book 4 has no copies on the shelf in the seed data, so it can be reserved.
+        MvcResult created = mockMvc.perform(post("/api/books/{bookId}/reservations", 4)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"memberId\":2}"))
+                .andExpect(status().isCreated())
+                .andExpect(OpenApiValidationMatchers.openApi().isValid(SPEC))
+                .andReturn();
+
+        // This class is not @Transactional, so the reservation above is committed to the shared
+        // H2 instance for the rest of the test run. Cancel it so member 2 does not permanently
+        // hold book 4, which would otherwise collide with ReservationFlowTest's own use of
+        // book 4 / member 2 whenever both test classes run in the same JVM.
+        long reservationId = objectMapper
+                .readTree(created.getResponse().getContentAsString())
+                .get("id")
+                .asLong();
+        mockMvc.perform(post("/api/reservations/{reservationId}/cancel", reservationId))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void listReservationsMatchesSpec() throws Exception {
+        mockMvc.perform(get("/api/reservations"))
+                .andExpect(status().isOk())
+                .andExpect(OpenApiValidationMatchers.openApi().isValid(SPEC));
+    }
+
+    @Test
+    void cancelReservationMatchesSpec() throws Exception {
+        MvcResult created = mockMvc.perform(post("/api/books/{bookId}/reservations", 4)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"memberId\":3}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        long reservationId = objectMapper
+                .readTree(created.getResponse().getContentAsString())
+                .get("id")
+                .asLong();
+
+        mockMvc.perform(post("/api/reservations/{reservationId}/cancel", reservationId))
+                .andExpect(status().isOk())
+                .andExpect(OpenApiValidationMatchers.openApi().isValid(SPEC));
+    }
+
+    @Test
+    void reservingAnAvailableBookErrorMatchesSpec() throws Exception {
+        // Book 1 (Clean Code) has copies available, so it cannot be reserved.
+        mockMvc.perform(post("/api/books/{bookId}/reservations", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"memberId\":1}"))
+                .andExpect(status().isConflict())
                 .andExpect(OpenApiValidationMatchers.openApi().isValid(SPEC));
     }
 }
